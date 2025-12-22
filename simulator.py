@@ -7,7 +7,8 @@ from traffic_management import (
     vehicles_to_move,
     release_vehicles,
     update_lights,
-    lane_status
+    LANES,
+    traffic_lights,
 )
 from traffic_generator import Generate_vehicle
 
@@ -16,7 +17,7 @@ SIMULATION_STEPS = 30
 last_active_lane = None  # To remember the last active lane when all are empty so as to avoid green light for empty lanes.
 
 for step in range(SIMULATION_STEPS):
-    print(f"\n--- STEP {step} ---")
+    print("\n-----------------------------")
 
     # Generating vehicles
     Generate_vehicle()
@@ -36,12 +37,12 @@ for step in range(SIMULATION_STEPS):
     # Updating the lights and vehicles to serve
     update_lights(active_lane)
     release_vehicles(active_lane, vehicles_to_release)
+
     if active_lane:
         last_active_lane = active_lane
 
     # Displaying state
-    status = lane_status()
-    for lane, info in status.items():
-        print(f"{lane}: {info['vehicles']} vehicles | Light: {info['light']}")
+    for lane in LANES:
+        print("{}: {} vehicles -------> {}".format(lane, len(lane_queues[lane]), traffic_lights[lane]))
 
     time.sleep(1)

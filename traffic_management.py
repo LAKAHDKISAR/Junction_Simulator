@@ -1,6 +1,6 @@
 from collections import deque
 
-LANES = ["AL2", "BL2", "CL2", "DL2"]
+LANES = ["AL2", "BL2", "CL2", "DL2", "AL1", "BL1", "CL1", "DL1", "AL3", "BL3", "CL3", "DL3"]
 
 PRIORITY_LANE = "AL2"
 PRIORITY_START_COUNT = 10
@@ -49,9 +49,7 @@ def vehicles_to_move():
 
     total_vehicles = sum(len(q) for q in lane_queues.values())
     number_of_lanes = len(LANES)
-
     vehicles = total_vehicles // number_of_lanes
-
     return max(1, vehicles)
 
 
@@ -63,19 +61,13 @@ def release_vehicles(lane, count):
 
 
 # Updating the traffic lights and green only for one active lane
-
 def update_lights(active_lane):
 
     for lane in traffic_lights:
         traffic_lights[lane] = "GREEN" if lane == active_lane else "RED"
 
 
-# =========================
-# Utility (Debug / Report)
-# =========================
-
 def lane_status():
-
     status = {}
     for lane in LANES:
         status[lane] = {
