@@ -33,18 +33,19 @@ def select_lane(priority_active, last_active_lane=None):
     # Exception for priority otherwise selecting the lane with max vehicles
     if priority_active:
         return PRIORITY_LANE
+    
+    #only control needing lanes 
+    control_needing_lanes = [lane for lane in LANES if lane.endswith(("1","2"))] 
 
     # When all lanes are empt then returining the last active lane
-    if all(len(lane_queues[lane]) == 0 for lane in LANES):
+    if all(len(lane_queues[lane]) == 0 for lane in control_needing_lanes):
         return last_active_lane
 
-    return max(
-        LANES,
-        key=lambda lane: len(lane_queues[lane])
+    return max(control_needing_lanes, key=lambda lane: len(lane_queues[lane])
     )
 
 
-#Vechicles to serve
+#Vechicles to move
 def vehicles_to_move():
 
     total_vehicles = sum(len(q) for q in lane_queues.values())
@@ -54,17 +55,23 @@ def vehicles_to_move():
 
 
 def release_vehicles(lane, count):
-
     for _ in range(count):
         if lane_queues[lane]:
             lane_queues[lane].popleft()
 
+    # For free lane (left trun lanes that dont need to be controlled)
+    for left_lane in [l for l in LANES if l.endswith("3")]:
+        if lane_queues[left_lane]:
+            lane_queues[left_lane].popleft()
 
-# Updating the traffic lights and green only for one active lane
+# Updating the traffic lights and green only for one active lane and also the left trun lanes
 def update_lights(active_lane):
 
     for lane in traffic_lights:
-        traffic_lights[lane] = "GREEN" if lane == active_lane else "RED"
+        if lane.endswith("3"):
+            traffic_lights[lane] = "GREEN"  # left lane always green
+        else: 
+            traffic_lights[lane] = "GREEN" if lane == active_lane else "RED"
 
 
 def lane_status():
