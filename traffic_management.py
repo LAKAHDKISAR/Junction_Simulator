@@ -16,7 +16,6 @@ lane_queues = {
     lane: deque() for lane in LANES
 }
 
-# States of the traffic lights
 traffic_lights = {
     lane: "RED" for lane in LANES
 }
@@ -32,9 +31,10 @@ def priority_should_end():
     return len(lane_queues[PRIORITY_LANE]) < PRIORITY_END_COUNT
 
 
-# Lane Selection  
+last_served=-1
 def select_lane(priority_active, last_active_lane=None):
-    # Exception for priority otherwise selecting the lane with max vehicles
+    global last_served
+    # Exception for priority
     if priority_active:
         return PRIORITY_LANE
     
@@ -44,9 +44,17 @@ def select_lane(priority_active, last_active_lane=None):
     # When all lanes are empt then returining the last active lane
     if all(len(lane_queues[lane]) == 0 for lane in control_needing_lanes):
         return last_active_lane
+    
 
-    return max(control_needing_lanes, key=lambda lane: len(lane_queues[lane])
-    )
+    # Selecting in a circular manner for each lane. (Circular Queue type approach)
+    n = len(control_needing_lanes)
+    for i in range(n):
+        last_served = (last_served + 1) % n
+        lane = control_needing_lanes[last_served]
+        if len(lane_queues[lane]) > 0:
+            return lane
+
+    return last_active_lane
 
 
 VEHICLES_RELEASE_LIMIT = 15
@@ -54,7 +62,11 @@ MIN_GREEN_TIME = 2
 MAX_GREEN_TIME = 15
 
 def vehicles_to_move(lane):
-    return min(len(lane_queues[lane]), VEHICLES_RELEASE_LIMIT)
+    normal_lanes = [l for l in LANES if l.endswith(("1","2"))]
+    total_vehicles = sum(len(lane_queues[lane]) for l in normal_lanes)
+    n = len(normal_lanes)
+    vehicles_per_lane = total_vehicles // n
+    return min(vehicles_per_lane, VEHICLES_RELEASE_LIMIT)
 
 
 def green_light_duration(lane):
@@ -68,7 +80,7 @@ def green_light_duration(lane):
     elif duration > MAX_GREEN_TIME:
         duration = MAX_GREEN_TIME
 
-    print(f"Green light duration: {duration} seconds for {lane}.")
+    print(f"Green light duration: {duration} seconds for {lane}. Vehicles released: {count}")
     return duration
 
 
@@ -93,7 +105,7 @@ def update_lights(active_lane):
 
     for lane in traffic_lights:
         if lane.endswith("3"):
-            traffic_lights[lane] = "GREEN"  # left lane always green
+            traffic_lights[lane] = "GREEN"
         else: 
             traffic_lights[lane] = "GREEN" if lane == active_lane else "RED"
 
