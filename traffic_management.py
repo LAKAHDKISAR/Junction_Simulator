@@ -1,7 +1,10 @@
 from collections import deque
 import random
 
-LANES = ["AL2", "BL2", "CL2", "DL2", "AL1", "BL1", "CL1", "DL1", "AL3", "BL3", "CL3", "DL3"]
+LANES_CONTROLLED = ["AL2", "BL2", "CL2", "DL2"]
+LEFT_TURNING_LANES = ["AL3", "BL3", "CL3", "DL3"]
+INCOMING_LANES = ["AL1", "BL1", "CL1", "DL1"]
+LANES = LEFT_TURNING_LANES + LANES_CONTROLLED
 
 PRIORITY_LANE = "AL2"
 PRIORITY_START_COUNT = 10
@@ -39,7 +42,7 @@ def select_lane(priority_active, last_active_lane=None):
         return PRIORITY_LANE
     
     #only control needing lanes 
-    control_needing_lanes = [lane for lane in LANES if lane.endswith(("1","2"))] 
+    control_needing_lanes = LANES_CONTROLLED
 
     # When all lanes are empt then returining the last active lane
     if all(len(lane_queues[lane]) == 0 for lane in control_needing_lanes):
@@ -62,9 +65,12 @@ MIN_GREEN_TIME = 2
 MAX_GREEN_TIME = 15
 
 def vehicles_to_move(lane):
-    normal_lanes = [l for l in LANES if l.endswith(("1","2"))]
-    total_vehicles = sum(len(lane_queues[lane]) for l in normal_lanes)
-    n = len(normal_lanes)
+    total_vehicles = sum(len(lane_queues[l]) for l in LANES_CONTROLLED)
+
+    if total_vehicles == 0:
+        return 0
+
+    n = len(LANES_CONTROLLED)
     vehicles_per_lane = total_vehicles // n
     return min(vehicles_per_lane, VEHICLES_RELEASE_LIMIT)
 
@@ -89,16 +95,17 @@ def release_vehicles(lane, count):
         if lane_queues[lane]:
             lane_queues[lane].popleft()
 
-    # For free lane (left trun lanes that dont need to be controlled)
-
-
-    left_trun_lanes = [l for l in LANES if l.endswith("3")]
-    for left_lane in left_trun_lanes:
-        # Such as how it is in real world now bound by time constraint. Only vehicles that can pass in certain time released.
+    left_trun_mapping = {
+        "AL3": "CL1",
+        "CL3": "BL1",
+        "BL3": "DL1",
+        "DL3": "AL1",
+    }
+    for left_lane, incoming_lane in left_trun_mapping.items():
         vehicles_to_move = min(count, len(lane_queues[left_lane]))
         for i in range(vehicles_to_move):
-            lane_queues[left_lane].popleft()
-
+            vehicle = lane_queues[left_lane].popleft()
+            lane_queues[incoming_lane].append(vehicle)
 
 # Updating the traffic lights and green only for one active lane and also the left trun lanes
 def update_lights(active_lane):
