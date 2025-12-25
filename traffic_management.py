@@ -65,12 +65,12 @@ MIN_GREEN_TIME = 2
 MAX_GREEN_TIME = 15
 
 def vehicles_to_move(lane):
-    total_vehicles = sum(len(lane_queues[l]) for l in LANES_CONTROLLED)
-
-    if total_vehicles == 0:
+    active_lane = [l for l in LANES_CONTROLLED if len(lane_queues[l]) > 0]
+    if not active_lane :
         return 0
 
-    n = len(LANES_CONTROLLED)
+    total_vehicles = sum(len(lane_queues[l]) for l in LANES_CONTROLLED)
+    n = len(active_lane)
     vehicles_per_lane = total_vehicles // n
     return min(vehicles_per_lane, VEHICLES_RELEASE_LIMIT)
 
@@ -89,23 +89,20 @@ def green_light_duration(lane):
     print(f"Green light duration: {duration} seconds for {lane}. Vehicles released: {count}")
     return duration
 
-
+vehicles_exited = 0
 def release_vehicles(lane, count):
-    for i in range(count):
-        if lane_queues[lane]:
-            lane_queues[lane].popleft()
+    global vehicles_exited
 
-    left_trun_mapping = {
-        "AL3": "CL1",
-        "CL3": "BL1",
-        "BL3": "DL1",
-        "DL3": "AL1",
-    }
-    for left_lane, incoming_lane in left_trun_mapping.items():
-        vehicles_to_move = min(count, len(lane_queues[left_lane]))
-        for i in range(vehicles_to_move):
-            vehicle = lane_queues[left_lane].popleft()
-            lane_queues[incoming_lane].append(vehicle)
+    if lane in LANES_CONTROLLED:
+        released = min(count, len(lane_queues[lane]))
+        for i in range(released):
+            lane_queues[lane].popleft()
+            vehicles_exited += 1
+
+    for left_lane in LEFT_TURNING_LANES:
+        while lane_queues[left_lane]:
+            lane_queues[left_lane].popleft()
+            vehicles_exited += 1
 
 # Updating the traffic lights and green only for one active lane and also the left trun lanes
 def update_lights(active_lane):
