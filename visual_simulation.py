@@ -67,6 +67,9 @@ TRAFFIC_LIGHT_POSITION = {
     "CL2": (CENTER_X + ROAD_WIDTH // 2 + 30, CENTER_Y - LANE_WIDTH),
     "DL2": (CENTER_X - ROAD_WIDTH // 2 - 30, CENTER_Y + LANE_WIDTH),
 }
+all_lanes = set(LANES_CONTROLLED) | set(LEFT_TURNING_LANES)
+last_release_time = {lane: 0 for lane in all_lanes}
+Release_interval = 200
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -132,19 +135,19 @@ def vehicle_design():
             pygame.draw.rect(screen, Vehicle_Color, (v["x"], v["y"], Vehicle_Size, Vehicle_Size))
 
 def add_new_vehicles(active_lane):
-    lanes_to_release = [active_lane] + [l for l in LEFT_TURNING_LANES if l.startswith(active_lane[0])]
+    lanes_to_release = LEFT_TURNING_LANES + ([active_lane] if active_lane else [])
+    current_time = pygame.time.get_ticks()
 
     for lane in lanes_to_release:
         queue = lane_queues[lane]
         lane_info = LANE_SCREEN_POSITION[lane]
         count = vehicles_to_move(lane)
-
-        for i in range(min(count, len(queue))):
+        if queue and current_time - last_release_time[lane] >= Release_interval:
             vehicle = queue.popleft()
             if lane_info["direction"] in ["down", "up"]:
                 x = lane_info["x"] - Vehicle_Size // 2
                 y = lane_info["y_start"]
-            else: 
+            else:
                 x = lane_info["x_start"]
                 y = lane_info["y"] - Vehicle_Size // 2
 
@@ -154,6 +157,7 @@ def add_new_vehicles(active_lane):
                 "x": x,
                 "y": y
             })
+            last_release_time[lane] = current_time
 
 def move_vehicles():
     for lane, vehicles in moving_vehicles.items():
@@ -164,7 +168,8 @@ def move_vehicles():
         new_list = []
 
         for v in vehicles:
-            if lane in LANES_CONTROLLED:
+            light = traffic_lights.get(lane, "RED")
+            if lane in LANES_CONTROLLED and light == "RED":
                 if direction == "down" and v["y"] + Vehicle_Speed >= stop:
                     v["y"] = stop
                     new_list.append(v)
