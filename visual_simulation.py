@@ -1,12 +1,15 @@
 import pygame
 import sys
 
+from traffic_management import lane_queues, traffic_lights, update_lights, select_lane, priority_lane_active, green_light_duration, release_vehicles
+from traffic_generator import Generate_vehicle
+
+
 pygame.init()
 WIDTH, HEIGHT = 1500, 1000
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Traffic Simulation")
 clock = pygame.time.Clock()
-
 
 Background_Color = Army_green = (69, 75, 27)
 Road_Color = Dark_grey =(169, 169, 169)
@@ -19,6 +22,26 @@ ROAD_WIDTH = 200
 LANE_WIDTH = ROAD_WIDTH // 3
 DASH_LEN = 18
 GAP_LEN = 12
+
+# ---Mapping lane position ----------------------
+LANE_SCREEN_POS = {
+    "AL1": {"x": CENTER_X - LANE_WIDTH, "y_start": 0, "direction": "down"},
+    "AL2": {"x": CENTER_X, "y_start": 0, "direction": "down"},
+    "AL3": {"x": CENTER_X + LANE_WIDTH, "y_start": 0, "direction": "down"},
+
+    "BL1": {"x": CENTER_X + LANE_WIDTH, "y_start": HEIGHT, "direction": "up"},
+    "BL2": {"x": CENTER_X, "y_start": HEIGHT, "direction": "up"},
+    "BL3": {"x": CENTER_X - LANE_WIDTH, "y_start": HEIGHT, "direction": "up"},
+
+    "CL1": {"y": CENTER_Y + LANE_WIDTH, "x_start": WIDTH, "direction": "left"},
+    "CL2": {"y": CENTER_Y, "x_start": WIDTH, "direction": "left"},
+    "CL3": {"y": CENTER_Y - LANE_WIDTH, "x_start": WIDTH, "direction": "left"},
+
+    "DL1": {"y": CENTER_Y - LANE_WIDTH, "x_start": 0, "direction": "right"},
+    "DL2": {"y": CENTER_Y, "x_start": 0, "direction": "right"},
+    "DL3": {"y": CENTER_Y + LANE_WIDTH, "x_start": 0, "direction": "right"},
+}
+
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -87,7 +110,15 @@ def roads_design():
 
 def main():
     running = True
+    last_gen_time = 0
+    GEN_INTERVAL = 1000 
+
     while running:
+        current_time = pygame.time.get_ticks()
+        if current_time - last_gen_time > GEN_INTERVAL:
+            Generate_vehicle()
+            last_gen_time = current_time
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
