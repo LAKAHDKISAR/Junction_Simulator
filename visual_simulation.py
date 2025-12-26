@@ -7,10 +7,14 @@ from traffic_generator import Generate_vehicle
 
 
 pygame.init()
+clock = pygame.time.Clock()
 WIDTH, HEIGHT = 1500, 1000
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Traffic Simulation")
 clock = pygame.time.Clock()
+
+current_light = None  
+light_start_time = pygame.time.get_ticks() / 1000 
 
 Background_Color = Army_green = (69, 75, 27)
 Road_Color = Dark_grey =(169, 169, 169)
@@ -181,15 +185,6 @@ def move_vehicles(dt):
                     new_list.append(v)
                     continue
 
-            if i > 0:  
-                v_ahead = vehicles[i-1]
-                if direction in ["down", "up"]:
-                    if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
-                        v["y"] = v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing) if direction=="down" else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
-                else: 
-                    if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
-                        v["x"] = v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing) if direction=="right" else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
-
             if direction == "down":
                 v["y"] += Vehicle_Speed * dt
             elif direction == "up":
@@ -198,6 +193,15 @@ def move_vehicles(dt):
                 v["x"] += Vehicle_Speed * dt
             elif direction == "left":
                 v["x"] -= Vehicle_Speed * dt
+
+            if i > 0:  
+                v_ahead = vehicles[i-1]
+                if direction in ["down", "up"]:
+                    if abs(v["y"] - v_ahead["y"]) < Vehicle_Size + Vehicle_Spacing:
+                        v["y"] = v_ahead["y"] - (Vehicle_Size + Vehicle_Spacing) if direction=="down" else v_ahead["y"] + (Vehicle_Size + Vehicle_Spacing)
+                else: 
+                    if abs(v["x"] - v_ahead["x"]) < Vehicle_Size + Vehicle_Spacing:
+                        v["x"] = v_ahead["x"] - (Vehicle_Size + Vehicle_Spacing) if direction=="right" else v_ahead["x"] + (Vehicle_Size + Vehicle_Spacing)
 
             if 0 <= v["x"] <= WIDTH and 0 <= v["y"] <= HEIGHT:
                 new_list.append(v)
@@ -235,21 +239,17 @@ def main():
         else:
             active_lane = select_lane(False, last_active_lane)
 
-        if active_lane != last_active_lane:
-            update_lights(active_lane)
-            green_duration = green_light_duration(active_lane)
-            light_start_time = current_time
-            last_active_lane = active_lane
-
         if active_lane:
             add_new_vehicles(active_lane)
 
         if current_time - light_start_time >= green_duration:
-            active_lane = select_lane(False, last_active_lane)
-            update_lights(active_lane)
-            green_duration = green_light_duration(active_lane)
-            light_start_time = current_time
-            last_active_lane = active_lane
+            next_lane = select_lane(False, last_active_lane)
+            if next_lane != active_lane:
+                active_lane = next_lane
+                update_lights(active_lane)
+                green_duration = green_light_duration(active_lane)
+                light_start_time = current_time
+                last_active_lane = active_lane
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
