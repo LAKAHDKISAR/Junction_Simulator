@@ -57,13 +57,6 @@ LANE_SCREEN_POSITION = {
     "DL3": {"y": CENTER_Y - LANE_WIDTH, "x_start": 0, "direction": "right"}
 }
 
-LEFT_TURN_TARGET = {
-    "AL3":"CL1",
-    "CL3":"BL1",
-    "BL3":"DL1",
-    "DL3":"AL1"
-}
-
 Vehicle_Size = 15
 Vehicle_Spacing = 20
 Vehicle_Speed = 120 
@@ -160,9 +153,7 @@ def vehicle_design():
             pygame.draw.rect(screen, Vehicle_Color, (v["x"], v["y"], Vehicle_Size, Vehicle_Size))
 
 def add_new_vehicles(active_lane):
-    lanes_to_release = [lane for lane in LEFT_TURNING_LANES if lane in LEFT_TURN_TARGET] 
-    if active_lane and active_lane not in LEFT_TURN_TARGET:
-            lanes_to_release.append(active_lane)
+    lanes_to_release = LEFT_TURNING_LANES + ([active_lane] if active_lane else [])
     current_time = pygame.time.get_ticks() / 1000
 
     for lane in lanes_to_release:
@@ -173,9 +164,7 @@ def add_new_vehicles(active_lane):
             x = lane_info["x"] - Vehicle_Size // 2 if lane_info["direction"] in ["down", "up"] else lane_info["x_start"]
             y = lane_info["y_start"] if lane_info["direction"] in ["down", "up"] else lane_info["y"] - Vehicle_Size // 2
 
-            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, 
-                                          "turn_progress": 0.0, # ------ t value for Bezier
-                                          "direction": lane_info["direction"]})
+            moving_vehicles[lane].append({"id": vehicle["id"], "intent": vehicle["intent"], "x": x, "y": y, "turned": False, "direction": LANE_SCREEN_POSITION[lane]["direction"] })
             last_release_time[lane] = current_time
 
 def move_vehicles(dt):
@@ -205,43 +194,16 @@ def move_vehicles(dt):
                     new_list.append(v)
                     continue
 
-            if v["intent"] == "left" and lane in LEFT_TURN_TARGET and not v.get("turned") and in_center(v):
-                target_lane = LEFT_TURN_TARGET[lane]
-                target_info = LANE_SCREEN_POSITION[target_lane]
-
-                if target_info["direction"] in ["up", "down"]:
-                    P2 = (target_info["x"], target_info["y_start"])
-                else:
-                    P2 = (target_info["x_start"], target_info["y"])
-
-                P0 = (v["x"], v["y"]) #--------Initializing Bezier points
-                P1 = (CENTER_X, CENTER_Y)
-
-                v["turn_curve"] = [P0, P1, P2]
-                v["turn_progress"] = 0.0
+            if v["intent"] == "left" and not v.get("turned") and in_center(v):
+                if v["direction"] == "up":
+                    v["direction"] = "left"
+                elif v["direction"] == "down":
+                    v["direction"] = "right"
+                elif v["direction"] == "left":
+                    v["direction"] = "down"
+                elif v["direction"] == "right":
+                    v["direction"] = "up"
                 v["turned"] = True
-
-            if v.get("turned") and "turn_curve" in v and v["turn_progress"] < 1.0:
-                t = v["turn_progress"]
-                P0, P1, P2 = v["turn_curve"]
-                x = (1-t)**2 * P0[0] + 2*(1-t)*t*P1[0] + t**2 * P2[0]
-                y = (1-t)**2 * P0[1] + 2*(1-t)*t*P1[1] + t**2 * P2[1]
-                v["x"], v["y"] = x, y
-                v["turn_progress"] += dt / 1.5
-                if v["turn_progress"] >= 1.0:
-                    del v["turn_curve"]
-                    del v["turn_progress"]
-
-                    #new direction after turn
-                    if v["direction"] == "up":
-                        v["direction"] = "left"
-                    elif v["direction"] == "down":
-                        v["direction"] = "right"
-                    elif v["direction"] == "left":
-                        v["direction"] = "down"
-                    elif v["direction"] == "right":
-                        v["direction"] = "up"
-                    continue
 
             d = v["direction"]
             if d == "down":
