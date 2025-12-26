@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-from traffic_management import lane_queues, traffic_lights, update_lights, select_lane, priority_lane_active, green_light_duration, release_vehicles
+from traffic_management import LANES_CONTROLLED, LEFT_TURNING_LANES, lane_queues, INCOMING_LANES
 from traffic_generator import Generate_vehicle
 
 
@@ -33,13 +33,13 @@ LANE_SCREEN_POS = {
     "BL2": {"x": CENTER_X, "y_start": HEIGHT, "direction": "up"},
     "BL3": {"x": CENTER_X - LANE_WIDTH, "y_start": HEIGHT, "direction": "up"},
 
-    "CL1": {"y": CENTER_Y + LANE_WIDTH, "x_start": WIDTH, "direction": "left"},
-    "CL2": {"y": CENTER_Y, "x_start": WIDTH, "direction": "left"},
-    "CL3": {"y": CENTER_Y - LANE_WIDTH, "x_start": WIDTH, "direction": "left"},
+    "CL1": {"y": CENTER_Y - LANE_WIDTH, "x_start": WIDTH, "direction": "left"},   
+    "CL2": {"y": CENTER_Y, "x_start": WIDTH, "direction": "left"},               
+    "CL3": {"y": CENTER_Y + LANE_WIDTH, "x_start": WIDTH, "direction": "left"},
 
-    "DL1": {"y": CENTER_Y - LANE_WIDTH, "x_start": 0, "direction": "right"},
-    "DL2": {"y": CENTER_Y, "x_start": 0, "direction": "right"},
-    "DL3": {"y": CENTER_Y + LANE_WIDTH, "x_start": 0, "direction": "right"},
+    "DL1": {"y": CENTER_Y + LANE_WIDTH, "x_start": 0, "direction": "right"},
+    "DL2": {"y": CENTER_Y, "x_start": 0, "direction": "right"},             
+    "DL3": {"y": CENTER_Y - LANE_WIDTH, "x_start": 0, "direction": "right"}
 }
 
 Vehicle_Size = 15
@@ -49,6 +49,8 @@ Vehicle_Color = black = (0, 0, 0)
 
 # empty lane initially , for moving vehicles
 moving_vehicles = {lane: [] for lane in lane_queues}
+
+INCOMING_LANES = ["AL1", "BL1", "CL1", "DL1"]
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -114,23 +116,19 @@ def vehicle_design():
             pygame.draw.rect(screen, Vehicle_Color, (v["x"], v["y"], Vehicle_Size, Vehicle_Size))
 
 def add_new_vehicles():
-    # new vehicles from lane queue to moving_vehicle function
-    for lane, queue in lane_queues.items():
+    for lane in LANES_CONTROLLED + LEFT_TURNING_LANES:
+        queue = lane_queues[lane]
         lane_info = LANE_SCREEN_POS[lane]
+
         while queue:
-            vehicle_id = queue.popleft()  # takeing the vehicle from lane queue
-            if lane_info["direction"] == "down":
+            vehicle_id = queue.popleft()
+            if lane_info["direction"] in ["down", "up"]:
                 x = lane_info["x"] - Vehicle_Size // 2
                 y = lane_info["y_start"]
-            elif lane_info["direction"] == "up":
-                x = lane_info["x"] - Vehicle_Size // 2
-                y = lane_info["y_start"]
-            elif lane_info["direction"] == "right":
+            else:  # left or right
                 x = lane_info["x_start"]
                 y = lane_info["y"] - Vehicle_Size // 2
-            elif lane_info["direction"] == "left":
-                x = lane_info["x_start"]
-                y = lane_info["y"] - Vehicle_Size // 2
+
             moving_vehicles[lane].append({"id": vehicle_id, "x": x, "y": y})
 
 def move_vehicles():
