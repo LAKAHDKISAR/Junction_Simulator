@@ -98,6 +98,10 @@ Priority Lane Specification
 - Deactivation Threshold: 5 vehicles
 - Behavior: Interrupts round-distribution when activated
 
+## Simulation Demo
+
+<video src="Docs/Simulation_Demo.mov" controls width="600"></video>
+
 ## File Structure
 
 .
