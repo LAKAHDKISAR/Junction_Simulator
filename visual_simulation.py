@@ -591,6 +591,17 @@ def move_vehicles(dt):
                     v["direction"] = "up"
                 v["turned"] = True
 
+            if v["intent"] == "right" and not v.get("turned") and ready_to_turn_right(v, lane):
+                if v["direction"] == "up":
+                    v["direction"] = "right"
+                elif v["direction"] == "down":
+                    v["direction"] = "left"
+                elif v["direction"] == "left":
+                    v["direction"] = "up"
+                elif v["direction"] == "right":
+                    v["direction"] = "down"
+                v["turned"] = True
+
 
             if i > 0:
                 v_ahead = vehicles[i-1]
@@ -613,44 +624,41 @@ def move_vehicles(dt):
                                 else v_ahead["x"] + (Vehicle_Width + Vehicle_Spacing)
                             )
 
-            if lane in MIDDLE_LANE_SHIFT and not v.get("shifted"):
+            if (lane in MIDDLE_LANE_SHIFT and not v.get("shifted") and not v.get("turned")):
+                lane_info = LANE_SCREEN_POSITION[lane]
                 shift_amount = MIDDLE_LANE_SHIFT[lane]
-                
-                if v["direction"] == "down" and v["y"] >= Stop_line["down"] - Shift_start_offset:
-                    target = LANE_SCREEN_POSITION[lane]["x"] + shift_amount
-                    remaining = target - v["x"]
-                    if abs(remaining) < 0.5:
-                        v["x"] = target
-                        v["shifted"] = True
-                    else:
-                        v["x"] += max(-Shift_speed * dt, min(Shift_speed * dt, remaining))
-                        
-                elif v["direction"] == "up" and v["y"] <= Stop_line["up"] + Shift_start_offset:
-                    target = LANE_SCREEN_POSITION[lane]["x"] + shift_amount
-                    remaining = target - v["x"]
-                    if abs(remaining) < 0.5:
-                        v["x"] = target
-                        v["shifted"] = True
-                    else:
-                        v["x"] += max(-Shift_speed * dt, min(Shift_speed * dt, remaining))
+                d = v["direction"]
 
-                elif v["direction"] == "right" and v["x"] >= Stop_line["right"] - Shift_start_offset:
-                    target = LANE_SCREEN_POSITION[lane]["y"] + shift_amount
-                    remaining = target - v["y"]
-                    if abs(remaining) < 0.5:
-                        v["y"] = target
-                        v["shifted"] = True
+                if d in ("down", "up"):
+                    if d == "down" and v["y"] < Stop_line["down"] - Shift_start_offset:
+                        pass
+                    elif d == "up" and v["y"] > Stop_line["up"] + Shift_start_offset:
+                        pass
                     else:
-                        v["y"] += max(-Shift_speed * dt, min(Shift_speed * dt, remaining))
+                        target = lane_info["x"] + shift_amount
+                        remaining = target - v["x"]
 
-                elif v["direction"] == "left" and v["x"] <= Stop_line["left"] + Shift_start_offset:
-                    target = LANE_SCREEN_POSITION[lane]["y"] + shift_amount
-                    remaining = target - v["y"]
-                    if abs(remaining) < 0.5:
-                        v["y"] = target
-                        v["shifted"] = True
+                        if abs(remaining) < 0.5:
+                            v["x"] = target
+                            v["shifted"] = True
+                        else:
+                            v["x"] += max(-Shift_speed * dt, min(Shift_speed * dt, remaining))
+
+                elif d in ("left", "right"):
+                    if d == "right" and v["x"] < Stop_line["right"] - Shift_start_offset:
+                        pass
+                    elif d == "left" and v["x"] > Stop_line["left"] + Shift_start_offset:
+                        pass
                     else:
-                        v["y"] += max(-Shift_speed * dt, min(Shift_speed * dt, remaining))
+                        target = lane_info["y"] + shift_amount
+                        remaining = target - v["y"]
+
+                        if abs(remaining) < 0.5:
+                            v["y"] = target
+                            v["shifted"] = True
+                        else:
+                            v["y"] += max(-Shift_speed * dt, min(Shift_speed * dt, remaining))
+
 
 
             d = v["direction"]
@@ -695,6 +703,19 @@ def ready_to_turn_left(v, lane):
         return v["x"] >= CENTER_X - Turn_offset
     if d == "left":
         return v["x"] <= CENTER_X + Turn_offset
+    return False
+
+def ready_to_turn_right(v, lane):
+    d = v["direction"]
+    FAR_OFFSET = ROAD_WIDTH // 2 - 50  
+    if d == "down":
+        return v["y"] >= CENTER_Y + FAR_OFFSET
+    if d == "up":
+        return v["y"] <= CENTER_Y - FAR_OFFSET
+    if d == "right":
+        return v["x"] >= CENTER_X + FAR_OFFSET
+    if d == "left":
+        return v["x"] <= CENTER_X - FAR_OFFSET
     return False
 
 def traffic_lights_design():
