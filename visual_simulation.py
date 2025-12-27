@@ -74,12 +74,14 @@ Stop_line = {
     "right": CENTER_X - ROAD_WIDTH // 2 - Vehicle_Size,
 }
 
-Light_Radius = 10
+Light_Radius = 8
+
+Ligth_offset = 75
 TRAFFIC_LIGHT_POSITION = {
-    "AL2": (CENTER_X - LANE_WIDTH, CENTER_Y - ROAD_WIDTH // 2 - 30),
-    "BL2": (CENTER_X + LANE_WIDTH, CENTER_Y + ROAD_WIDTH // 2 + 30),
-    "CL2": (CENTER_X + ROAD_WIDTH // 2 + 30, CENTER_Y - LANE_WIDTH),
-    "DL2": (CENTER_X - ROAD_WIDTH // 2 - 30, CENTER_Y + LANE_WIDTH),
+    "AL2": (CENTER_X, CENTER_Y - ROAD_WIDTH//2 + Ligth_offset), 
+    "BL2": (CENTER_X, CENTER_Y + ROAD_WIDTH//2 - Ligth_offset),
+    "CL2": (CENTER_X + ROAD_WIDTH//2 - Ligth_offset, CENTER_Y),  
+    "DL2": (CENTER_X - ROAD_WIDTH//2 + Ligth_offset, CENTER_Y),  
 }
 
 all_lanes = set(LANES_CONTROLLED) | set(LEFT_TURNING_LANES)
@@ -98,8 +100,9 @@ MIDDLE_LANE_SHIFT = {
     "CL2": +LANE_WIDTH,
 }
 
-Shift_start_offset = 20  #---- for middle lane shifting to enter through incoming
+Shift_start_offset = 30  #---- for middle lane shifting to enter through incoming
 Shift_speed = 40
+
 
 def dashed_lane_line_vertical(x, start_y, end_y):
     y = start_y
@@ -157,6 +160,10 @@ def roads_design():
 
     # - Centre box -
     pygame.draw.rect(screen, Intersection_Color, intersection_rect)
+
+    MIDDLE_BOX_SIZE = 50  
+    middle_rect = pygame.Rect( CENTER_X - MIDDLE_BOX_SIZE // 2, CENTER_Y - MIDDLE_BOX_SIZE // 2, MIDDLE_BOX_SIZE, MIDDLE_BOX_SIZE)
+    pygame.draw.rect(screen, (53,57,53), middle_rect)
 
 
 def vehicle_design():
