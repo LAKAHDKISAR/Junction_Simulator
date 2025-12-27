@@ -236,6 +236,77 @@ def straight_arrow(x, y, direction, color=(245,245,245)):
              (x, y + head)]
         )
 
+def middle_lane_combined_arrow(x, y, direction, color=(245,245,245)):
+    """Draws a longer main arrow with a small right-turn indicator along its shaft pointing correctly."""
+    main_length = ARROW_BODY * 2  # double the length
+    small_arrow_length = ARROW_BODY // 2
+    w = ARROW_WIDTH
+    head = ARROW_HEAD
+    kink = ARROW_KINK
+
+    # Main straight arrow
+    if direction == "down":
+        pygame.draw.line(screen, color, (x, y - main_length), (x, y), w)
+        pygame.draw.polygon(
+            screen, color,
+            [(x, y + head),
+             (x - head, y),
+             (x + head, y)]
+        )
+        # Small right-turn arrow points left (opposite)
+        mid_y = y - main_length // 2
+        pygame.draw.line(screen, color, (x, mid_y), (x - small_arrow_length, mid_y), w)
+        pygame.draw.polygon(screen, color, [
+            (x - small_arrow_length - head, mid_y),
+            (x - small_arrow_length, mid_y - head),
+            (x - small_arrow_length, mid_y + head)
+        ])
+
+    elif direction == "up":
+        pygame.draw.line(screen, color, (x, y + main_length), (x, y), w)
+        pygame.draw.polygon(screen, color,
+                            [(x, y - head),
+                             (x - head, y),
+                             (x + head, y)])
+        # Small right-turn arrow points right (opposite)
+        mid_y = y + main_length // 2
+        pygame.draw.line(screen, color, (x, mid_y), (x + small_arrow_length, mid_y), w)
+        pygame.draw.polygon(screen, color, [
+            (x + small_arrow_length + head, mid_y),
+            (x + small_arrow_length, mid_y - head),
+            (x + small_arrow_length, mid_y + head)
+        ])
+
+    elif direction == "right":
+        pygame.draw.line(screen, color, (x - main_length, y), (x, y), w)
+        pygame.draw.polygon(screen, color,
+                            [(x + head, y),
+                             (x, y - head),
+                             (x, y + head)])
+        # Small right-turn arrow points down (opposite)
+        mid_x = x - main_length // 2
+        pygame.draw.line(screen, color, (mid_x, y), (mid_x, y + small_arrow_length), w)
+        pygame.draw.polygon(screen, color, [
+            (mid_x, y + small_arrow_length + head),
+            (mid_x - head, y + small_arrow_length),
+            (mid_x + head, y + small_arrow_length)
+        ])
+
+    elif direction == "left":
+        pygame.draw.line(screen, color, (x + main_length, y), (x, y), w)
+        pygame.draw.polygon(screen, color,
+                            [(x - head, y),
+                             (x, y - head),
+                             (x, y + head)])
+        # Small right-turn arrow points up (opposite)
+        mid_x = x + main_length // 2
+        pygame.draw.line(screen, color, (mid_x, y), (mid_x, y - small_arrow_length), w)
+        pygame.draw.polygon(screen, color, [
+            (mid_x, y - small_arrow_length - head),
+            (mid_x - head, y - small_arrow_length),
+            (mid_x + head, y - small_arrow_length)
+        ])
+
 
 def left_turn_arrow(x, y, direction, color=(245,245,245)):
     shaft = ARROW_BODY
@@ -310,7 +381,7 @@ def incoming_lane_arrows():
         straight_arrow(x, y, OPPOSITE_DIRECTION[d])
 
 def middle_lane_arrows():
-    offset = 45
+    offset = 20
 
     for lane in Indicator_req_middle_lanes:
         info = LANE_SCREEN_POSITION[lane]
@@ -332,7 +403,7 @@ def middle_lane_arrows():
             x = Stop_line["left"] + offset
             y = info["y"]
 
-        straight_arrow(x, y, d)
+        middle_lane_combined_arrow(x, y, d)
 
 def left_turn_lane_arrows():
     offset = 45
