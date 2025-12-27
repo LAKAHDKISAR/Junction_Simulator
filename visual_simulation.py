@@ -161,6 +161,16 @@ TREE_IMAGES = [
     for img in TREE_IMAGES
 ]
 
+LAKE_IMAGE = pygame.image.load("Asset/Lake.png").convert_alpha()
+LAKE_WIDTH = 200
+LAKE_HEIGHT = 150
+LAKE_IMAGE = pygame.transform.smoothscale(LAKE_IMAGE, (LAKE_WIDTH, LAKE_HEIGHT))
+LAKE_POSITION = (
+    CENTER_X + ROAD_WIDTH//2 + 40,  
+    CENTER_Y + ROAD_WIDTH//2 + 40    
+)
+screen.blit(LAKE_IMAGE, LAKE_POSITION)
+
 def add_log(message):
     global log_messages
     log_messages.append(message)
@@ -494,6 +504,7 @@ def roads_design():
     incoming_lane_arrows()
     middle_lane_arrows()
     left_turn_lane_arrows()
+    screen.blit(LAKE_IMAGE, LAKE_POSITION)
     trees()
 
 def vehicle_design():
