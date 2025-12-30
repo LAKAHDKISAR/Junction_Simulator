@@ -209,6 +209,18 @@ raindrops = [{"x": random.randint(0, WIDTH), "y": random.randint(0, HEIGHT), "sp
 rain_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 rain_surface.fill((0,0,0,0))
 
+time_of_day = 12
+time_speed = 0.01
+
+Day_Background = (135, 206, 235)
+Night_Background = (20, 24, 82)
+
+Day_road = (50, 50, 50)
+Night_road = (30, 30, 30)
+
+Day_light = 180
+Night_light = 255
+
 def add_log(message):
     global log_messages
     log_messages.append(message)
@@ -588,7 +600,64 @@ def rain():
             drop["y"] = -5
             drop["x"] = random.randint(0, WIDTH)
 
+def lerp(a, b, t):
+    return int(a + (b - a) * t)
+
+def background_color(time_of_day):
+    if 6 <= time_of_day < 18:
+        if 6 <= time_of_day < 8:
+            t = (time_of_day - 6) / 2
+            return tuple(lerp(Night_Background[i], Day_Background[i], t) for i in range(3))
+        elif 16 <= time_of_day < 18:  # Dusk
+            t = (time_of_day - 16) / 2
+            return tuple(lerp(Day_Background[i], Night_Background[i], t) for i in range(3))
+        else:
+            return Day_Background
+    else:
+        return Night_Background
+
+def road_color(time_of_day):
+    if 6 <= time_of_day < 18:
+        if 6 <= time_of_day < 8:
+            t = (time_of_day - 6) / 2
+            return tuple(lerp(Night_road[i], Day_road[i], t) for i in range(3))
+        elif 16 <= time_of_day < 18:
+            t = (time_of_day - 16) / 2
+            return tuple(lerp(Day_road[i], Night_road[i], t) for i in range(3))
+        else:
+            return Day_road
+    else:
+        return Night_road
+
+def light_brightness(time_of_day):
+    if 6 <= time_of_day < 18:
+        if 6 <= time_of_day < 8:
+            t = (time_of_day - 6) / 2
+            return lerp(Night_light, Day_light, t)
+        elif 16 <= time_of_day < 18:
+            t = (time_of_day - 16) / 2
+            return lerp(Day_light, Night_light, t)
+        else:
+            return Day_light
+    else:
+        return Night_light
+    
+def night_overlay_alpha(time_of_day):
+    if 6 <= time_of_day < 8:
+        t = (time_of_day - 6) / 2
+        return int(100 * (1 - t))
+    elif 16 <= time_of_day < 18:
+        t = (time_of_day - 16) / 2
+        return int(100 * t)
+    elif 8 <= time_of_day < 16:
+        return 0
+    else:
+        return 100
+
 def roads_design():
+    Background_Color = background_color(time_of_day)
+    screen.fill(Background_Color)
+
     for x in range(0, WIDTH, Grass_Image.get_width()):
             for y in range(0, HEIGHT, Grass_Image.get_height()):
                 screen.blit(Grass_Image, (x, y))
@@ -653,6 +722,12 @@ def roads_design():
     screen.blit(LAKE_IMAGE, LAKE_POSITION)
     trees()
 
+    alpha = night_overlay_alpha(time_of_day)
+    if alpha > 0:
+            night_overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            night_overlay.fill((0, 0, 50, alpha))
+            screen.blit(night_overlay, (0, 0))
+        
 def vehicle_design():
     for vehicles in moving_vehicles.values():
         for v in vehicles:
@@ -952,6 +1027,7 @@ def main():
     green_duration = 0
     current_time = pygame.time.get_ticks() / 1000
     phase_end_time = current_time
+    global time_of_day
 
     current_active_lane = select_lane(priority_lane_active())
     if current_active_lane:
@@ -967,6 +1043,9 @@ def main():
         if current_time - last_gen_time > GEN_INTERVAL:
             Generate_vehicle()
             last_gen_time = current_time
+        time_of_day += time_speed
+        if time_of_day >= 24:
+            time_of_day = 0
 
         if current_time >= phase_end_time:
             if phase == "GREEN":
