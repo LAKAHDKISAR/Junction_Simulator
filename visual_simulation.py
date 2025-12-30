@@ -98,7 +98,7 @@ last_release_time = {lane: current_time for lane in all_lanes}
 Time_per_vehicle = 1.0
 Release_interval = Time_per_vehicle
 
-Turn_offset = 80  #--- for left turning vehicles
+Turn_offset = 85  #--- for left turning vehicles
 
 MIDDLE_LANE_SHIFT = {
     "AL2": +LANE_WIDTH,   
@@ -203,6 +203,11 @@ Crosswalk_color = (255, 255, 255)
 Crosswalk_offset = 2
 
 Lane_mark_offset= Crosswalk_thickness + Crosswalk_offset + 5
+
+NUM_RAINDROPS = 200
+raindrops = [{"x": random.randint(0, WIDTH), "y": random.randint(0, HEIGHT), "speed": random.randint(4, 10)} for i in range(NUM_RAINDROPS)]
+rain_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+rain_surface.fill((0,0,0,0))
 
 def add_log(message):
     global log_messages
@@ -567,13 +572,22 @@ def trees():
     for x, y, tree in TREE_INSTANCES:
         screen.blit(tree, (x, y))
 
-def crosswalk(x, y, length, horizontal=True, offset=0):
+def crosswalk(x, y, length, horizontal=True, offset=0, margin=5):
     if horizontal:
-        for i in range(0, length, Crosswalk_stip_width + Crosswalk_stip_gap):
-            pygame.draw.rect(screen, Crosswalk_color, (x + i, y + offset, Crosswalk_stip_width, Crosswalk_thickness))
+        for i in range(0, length - 2*margin, Crosswalk_stip_width + Crosswalk_stip_gap):
+            pygame.draw.rect(screen, Crosswalk_color, (x + margin + i, y + offset, Crosswalk_stip_width, Crosswalk_thickness))
     else:
-        for i in range(0, length, Crosswalk_stip_width + Crosswalk_stip_gap):
-            pygame.draw.rect(screen, Crosswalk_color, (x + offset, y + i, Crosswalk_thickness, Crosswalk_stip_width))
+        for i in range(0, length - 2*margin, Crosswalk_stip_width + Crosswalk_stip_gap):
+            pygame.draw.rect(screen, Crosswalk_color, (x + offset, y + margin + i, Crosswalk_thickness, Crosswalk_stip_width))
+
+def rain():
+    for drop in raindrops:
+        pygame.draw.line(screen, (173, 216, 230), (drop["x"], drop["y"]), (drop["x"] + 2, drop["y"] + 5), 1)
+        drop["y"] += drop["speed"]
+        if drop["y"] > HEIGHT:
+            drop["y"] = -5
+            drop["x"] = random.randint(0, WIDTH)
+
 def roads_design():
     for x in range(0, WIDTH, Grass_Image.get_width()):
             for y in range(0, HEIGHT, Grass_Image.get_height()):
@@ -616,12 +630,10 @@ def roads_design():
     pygame.draw.line(screen, Road_border_color, (road_d_rect.left, road_d_rect.top), (road_d_rect.right, road_d_rect.top), Road_border_width)
     pygame.draw.line(screen, Road_border_color, (road_d_rect.left, road_d_rect.bottom - 1), (road_d_rect.right, road_d_rect.bottom - 1), Road_border_width)
 
-    crosswalk(road_a_rect.left, road_a_rect.bottom - Crosswalk_thickness - Crosswalk_offset, road_a_rect.width, horizontal=True)
-    crosswalk(road_b_rect.left, road_b_rect.top + Crosswalk_offset, road_b_rect.width, horizontal=True)
-    crosswalk(road_c_rect.left + Crosswalk_offset, road_c_rect.top, road_c_rect.height, horizontal=False)
-    crosswalk(road_d_rect.right - Crosswalk_thickness - Crosswalk_offset, road_d_rect.top, road_d_rect.height, horizontal=False)
-
-
+    crosswalk(road_a_rect.left, road_a_rect.bottom - Crosswalk_thickness - Crosswalk_offset, road_a_rect.width, horizontal=True, margin=5)
+    crosswalk(road_b_rect.left, road_b_rect.top + Crosswalk_offset, road_b_rect.width, horizontal=True, margin=5)
+    crosswalk(road_c_rect.left + Crosswalk_offset, road_c_rect.top, road_c_rect.height, horizontal=False, margin=5)
+    crosswalk(road_d_rect.right - Crosswalk_thickness - Crosswalk_offset, road_d_rect.top, road_d_rect.height, horizontal=False, margin=5)
 
     # - Centre box -
     pygame.draw.rect(screen, Intersection_Color, intersection_rect)
@@ -996,6 +1008,7 @@ def main():
         move_vehicles(dt)
         roads_design()
         sidebar()
+        rain()
         lane_names()
         vehicle_design()
         traffic_lights_design()
