@@ -69,15 +69,27 @@ moving_vehicles = {lane: [] for lane in lane_queues}
 
 INCOMING_LANES = ["AL1", "BL1", "CL1", "DL1"]
 
-Light_Radius = 8
-
-Ligtht_offset = 75
+Ligtht_offset = 70
 TRAFFIC_LIGHT_POSITION = {
     "AL2": (CENTER_X, CENTER_Y - ROAD_WIDTH//2 + Ligtht_offset), 
     "BL2": (CENTER_X, CENTER_Y + ROAD_WIDTH//2 - Ligtht_offset),
     "CL2": (CENTER_X + ROAD_WIDTH//2 - Ligtht_offset, CENTER_Y),  
     "DL2": (CENTER_X - ROAD_WIDTH//2 + Ligtht_offset, CENTER_Y),  
 }
+RIGHT_TURN_ARROW_OFFSET = 22
+RIGHT_TURN_ARROW_CONFIG = {
+    "AL2": {"dx": -RIGHT_TURN_ARROW_OFFSET, "dy": 0,  "dir": "left"},
+    "BL2": {"dx":  RIGHT_TURN_ARROW_OFFSET, "dy": 0,  "dir": "right"},
+    "CL2": {"dx": 0, "dy": -RIGHT_TURN_ARROW_OFFSET, "dir": "up"},
+    "DL2": {"dx": 0, "dy":  RIGHT_TURN_ARROW_OFFSET, "dir": "down"},
+}
+
+LIGHT_BOX_WIDTH = 30
+LIGHT_BOX_HEIGHT = 70
+LIGHT_BOX_RADIUS = 5
+BULB_RADIUS = 7
+BULB_SPACING = 20
+LIGHT_BOX_PADDING =  BULB_RADIUS + 3
 
 all_lanes = set(LANES_CONTROLLED) | set(LEFT_TURNING_LANES)
 current_time = pygame.time.get_ticks() / 1000
@@ -569,9 +581,9 @@ def roads_design():
     # - Centre box -
     pygame.draw.rect(screen, Intersection_Color, intersection_rect)
 
-    MIDDLE_BOX_SIZE = 50  
+    MIDDLE_BOX_SIZE = 30  
     middle_rect = pygame.Rect( CENTER_X - MIDDLE_BOX_SIZE // 2, CENTER_Y - MIDDLE_BOX_SIZE // 2, MIDDLE_BOX_SIZE, MIDDLE_BOX_SIZE)
-    pygame.draw.rect(screen, (53,57,53), middle_rect)
+    pygame.draw.rect(screen, (53,57,53), middle_rect, border_radius=8)
 
     priority_triangles_al2()
     incoming_lane_arrows()
@@ -791,6 +803,54 @@ def ready_to_turn_right(v, lane):
         return v["x"] <= CENTER_X - FAR_OFFSET
     return False
 
+def traffic_light_box(main_pos, right_pos):
+    x_min = min(main_pos[0], right_pos[0]) - LIGHT_BOX_PADDING
+    x_max = max(main_pos[0], right_pos[0]) + LIGHT_BOX_PADDING
+    y_min = min(main_pos[1], right_pos[1]) - LIGHT_BOX_PADDING
+    y_max = max(main_pos[1], right_pos[1]) + LIGHT_BOX_PADDING
+
+    width = x_max - x_min
+    height = y_max - y_min
+
+    rect = pygame.Rect(x_min, y_min, width, height)
+    pygame.draw.rect(screen, (50,50,50), rect, border_radius=8)
+
+def right_turn_light(x, y, direction, color):
+    size = 4
+    w = 3
+
+    if direction == "left":
+        pygame.draw.line(screen, color, (x + size, y), (x - size, y), w)
+        pygame.draw.polygon(screen, color, [
+            (x - size - 4, y),
+            (x - size, y - 4),
+            (x - size, y + 4),
+        ])
+
+    elif direction == "right":
+        pygame.draw.line(screen, color, (x - size, y), (x + size, y), w)
+        pygame.draw.polygon(screen, color, [
+            (x + size + 4, y),
+            (x + size, y - 4),
+            (x + size, y + 4),
+        ])
+
+    elif direction == "up":
+        pygame.draw.line(screen, color, (x, y + size), (x, y - size), w)
+        pygame.draw.polygon(screen, color, [
+            (x, y - size - 4),
+            (x - 4, y - size),
+            (x + 4, y - size),
+        ])
+
+    elif direction == "down":
+        pygame.draw.line(screen, color, (x, y - size), (x, y + size), w)
+        pygame.draw.polygon(screen, color, [
+            (x, y + size + 4),
+            (x - 4, y + size),
+            (x + 4, y + size),
+        ])
+
 def traffic_lights_design():
     for lane, pos in TRAFFIC_LIGHT_POSITION.items():
         state = traffic_lights.get(lane, "RED")
@@ -801,7 +861,23 @@ def traffic_lights_design():
             color = (255, 255, 0)
         else:
             color = (255, 0, 0)
-        pygame.draw.circle(screen, color, pos, Light_Radius)
+
+        cfg = RIGHT_TURN_ARROW_CONFIG.get(lane, {"dx": 0, "dy": 0, "dir": None})
+        dx, dy = cfg["dx"], cfg["dy"]
+
+        center_x = pos[0]
+        center_y = pos[1]
+
+        main_bulb_pos = (center_x - dx / 2, center_y - dy / 2)
+        right_bulb_pos = (main_bulb_pos[0] + dx, main_bulb_pos[1] + dy)
+
+        traffic_light_box(main_bulb_pos, right_bulb_pos)
+
+        pygame.draw.circle(screen, color, main_bulb_pos, BULB_RADIUS)
+
+        if cfg["dir"]:
+            right_turn_light(right_bulb_pos[0], right_bulb_pos[1], cfg["dir"], color)
+
 
 def main():
     running = True
